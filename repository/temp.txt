@@ -1,0 +1,6 @@
+I plan to implement the following items for Part 3 in my file transfer protocol.
+
+-Basic user authentication (user/password)
+-Role-based access control
+-Implementing the 4 message types
+-Uploading, downloading and error states and associated transitions

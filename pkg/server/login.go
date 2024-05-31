@@ -37,23 +37,16 @@ func authorizeUser(user *User, permission string) bool {
 	return false
 }
 
-func createSession(user *User) string {
-	sessionToken := fmt.Sprintf("%d", time.Now().UnixNano())
+func createSession(user *User) []byte {
+	sessionToken := []byte(fmt.Sprintf("%d", time.Now().UnixNano()))
 	sessionMutex.Lock()
-	sessions[sessionToken] = user
+	sessions[string(sessionToken)] = user
 	sessionMutex.Unlock()
 	return sessionToken
 }
 
-func getSession(token string) (*User, bool) {
+func deleteSession(token []byte) {
 	sessionMutex.Lock()
-	user, exists := sessions[token]
-	sessionMutex.Unlock()
-	return user, exists
-}
-
-func deleteSession(token string) {
-	sessionMutex.Lock()
-	delete(sessions, token)
+	delete(sessions, string(token))
 	sessionMutex.Unlock()
 }
