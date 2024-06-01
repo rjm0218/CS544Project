@@ -15,6 +15,7 @@ type User struct {
 var users = map[string]*User{
 	"user1": {Username: "user1", Password: "password1!", Permissions: []string{"upload", "download"}},
 	"user2": {Username: "user2", Password: "password2!", Permissions: []string{"download"}},
+	"user3": {Username: "user2", Password: "password3!", Permissions: []string{"upload"}},
 }
 
 var sessions = make(map[string]*User)
@@ -49,4 +50,12 @@ func deleteSession(token []byte) {
 	sessionMutex.Lock()
 	delete(sessions, string(token))
 	sessionMutex.Unlock()
+}
+
+func validSessionToken(token []byte) bool {
+	sessionMutex.Lock()
+	defer sessionMutex.Unlock()
+
+	_, ok := sessions[string(token)]
+	return ok
 }

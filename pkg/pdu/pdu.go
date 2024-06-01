@@ -68,13 +68,14 @@ const (
 	// Error codes
 	FILE_NOT_FOUND         uint8 = 1
 	DIRECTORY_NOT_FOUND    uint8 = 2
-	ACCESS_DENIED          uint8 = 3
-	TIMEOUT                uint8 = 4
-	CONNECTION_INTERRUPTED uint8 = 5
-	INVALID_CONTROL_CODE   uint8 = 6
-	WRITE_ERROR            uint8 = 7
-	READ_ERROR             uint8 = 8
-	UNKNOWN_ERROR          uint8 = 9
+	INVALID_CRED           uint8 = 3
+	ACCESS_DENIED          uint8 = 4
+	TIMEOUT                uint8 = 5
+	CONNECTION_INTERRUPTED uint8 = 6
+	INVALID_CONTROL_CODE   uint8 = 7
+	WRITE_ERROR            uint8 = 8
+	READ_ERROR             uint8 = 9
+	UNKNOWN_ERROR          uint8 = 10
 
 	//Data sizes for easier management
 	HandHeadSize uint32 = 24
@@ -167,6 +168,18 @@ func RemovePadding(data []byte) []byte {
 	return data[:lastNonNullIndex+1]
 }
 
+// extract the raw json message from the raw bytes
+func GetMessage(raw []byte) (json.RawMessage, error) {
+	data := RemovePadding(raw)
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	var msg json.RawMessage
+	err := decoder.Decode(&msg)
+	if err != nil {
+		return nil, err
+	}
+	return msg, nil
+}
+
 // extract the message type from the json message
 func ExtractMessageType(raw json.RawMessage) (uint8, error) {
 	var temp struct {
@@ -179,17 +192,6 @@ func ExtractMessageType(raw json.RawMessage) (uint8, error) {
 		return 0, err
 	}
 	return temp.Header.Type, nil
-}
-
-// extract the raw json message from the raw bytes
-func GetMessage(raw []byte) (json.RawMessage, error) {
-	decoder := json.NewDecoder(bytes.NewReader(raw))
-	var msg json.RawMessage
-	err := decoder.Decode(&msg)
-	if err != nil {
-		return nil, err
-	}
-	return msg, nil
 }
 
 // create a new handshake message
