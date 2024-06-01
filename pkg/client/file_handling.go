@@ -14,6 +14,10 @@ import (
 	"github.com/quic-go/quic-go"
 )
 
+const (
+	LOCAL = "./local/"
+)
+
 // handle the uploading of a file to the server
 func (c *Client) uploadFile(stream quic.Stream, filePath string, transaction_id uint32, seq_number uint32) error {
 
@@ -162,7 +166,7 @@ func (c *Client) downloadFile(stream quic.Stream, filePath string, transaction_i
 		log.Printf("[client] received Ack signaling download in progress")
 	}
 
-	file, err := os.Create(filePath)
+	file, err := os.Create(LOCAL + filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
 	}

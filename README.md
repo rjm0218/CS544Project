@@ -16,29 +16,43 @@ This is a Go project that implements a client-server application using the QUIC 
 - `pkg/server`: Implementation of the server-side logic, including user authentication, file transfer handling, and session management.
 - `pkg/pdu`: Defines the protocol data unit (PDU) structures and helper functions for encoding and decoding PDU messages.
 - `pkg/util`: Utility functions for generating TLS configurations.
+- `local`: Directory representing local files for the client (can upload files from here and downloaded files will be dropped here)
+- `repository`: Directory representing the server's files (can upload files to here and downloaded files will be read from here)
+- `Makefile`: Makefile used to build echo binary for both client and server
+
+## Configuration
+
+The client and server can be configured using flags during the echo calls below. The following options are available:
+
+- `-tls-gen`: Generate a self-signed TLS certificate (true/false)
+- `-cert-file`: Path to the TLS certificate file (if `tls-gen` is false)
+- `-key-file`: Path to the TLS key file (if `tls-gen` is false)
+- `-server-addr`: Server address or hostname when starting the server (default "localhost")
+- `-server-ip`: Server IP address for the client to connect to (default "0.0.0.0")
+
+Port number is hardcoded to 4242
 
 ## Usage
 
 1. Build the server and client applications:
 
-
-
-go build ./cmd/echo
+make build
 
 
 2. Run the server:
 
 
-./echo -server
+./bin/echo -server -server-ip `ip`
 
 
 3. Run the client and connect to the server:
 
 
-./echo -client
+./bin/echo -client -server-addr `address`
 
 
 4. Follow the prompts in the client to authenticate and perform file transfer operations.
+
 
 ## Login
 
@@ -47,17 +61,6 @@ Hardcoded users for testing purposes are located in `pkg/server/login.go`. The f
 	Username: "user1", Password: "password1!", Permissions: "upload" && "download",
 	Username: "user2", Password: "password2!", Permissions: "download",
 	Username: "user2", Password: "password3!", Permissions: "upload",
-
-
-## Configuration
-
-The server can be configured using the `ServerConfig` struct in `pkg/server/server.go`. The following options are available:
-
-- `GenTLS`: Generate a self-signed TLS certificate (true/false)
-- `CertFile`: Path to the TLS certificate file (if `GenTLS` is false)
-- `KeyFile`: Path to the TLS key file (if `GenTLS` is false)
-- `Address`: Server IP address or hostname
-- `Port`: Server port number
 
 ## Protocol Data Units (PDUs)
 
