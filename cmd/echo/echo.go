@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"log"
 
 	"CS544PROJECT/pkg/client"
 	"CS544PROJECT/pkg/server"
@@ -16,11 +17,11 @@ var (
 	PORT_NUMBER  = 4242
 
 	//SERVER PARAMETERS
-	SERVER_IP = "0.0.0.0"
+	SERVER_IP = ""
 	KEY_FILE  = ""
 
 	//CLIENT PARAMETERS
-	SERVER_ADDR = "localhost"
+	SERVER_ADDR = ""
 )
 
 func processFlags() {
@@ -58,6 +59,10 @@ func main() {
 	processFlags()
 
 	if MODE_CLIENT {
+		if SERVER_ADDR == "" {
+			log.Printf("Must specify server address using server-addr flag")
+			return
+		}
 		clientConfig := client.ClientConfig{
 			ServerAddr: SERVER_ADDR,
 			PortNumber: PORT_NUMBER,
@@ -66,6 +71,10 @@ func main() {
 		client := client.NewClient(clientConfig)
 		client.Run()
 	} else {
+		if SERVER_IP == "" {
+			log.Printf("Must specify server ip using server-ip flag")
+			return
+		}
 		serverConfig := server.ServerConfig{
 			GenTLS:   GENERATE_TLS,
 			CertFile: CERT_FILE,

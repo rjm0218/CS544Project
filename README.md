@@ -32,6 +32,16 @@ The client and server can be configured using flags during the echo calls below.
 
 Port number is hardcoded to 4242
 
+## Setup
+
+1. Clone the repo
+
+git clone https://github.com/rjm0218/CS544Project.git
+
+2. Go to project directory
+
+cd CS544Project
+
 ## Usage
 
 1. Build the server and client applications:
@@ -42,13 +52,13 @@ make build
 2. Run the server:
 
 
-./bin/echo -server -server-ip `ip`
+./bin/echo -server -server-ip `your desired ip`
 
 
 3. Run the client and connect to the server:
 
 
-./bin/echo -client -server-addr `address`
+./bin/echo -client -server-addr `same ip as server`
 
 
 4. Follow the prompts in the client to authenticate and perform file transfer operations.

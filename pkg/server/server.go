@@ -480,6 +480,8 @@ func (s *Server) sendAck(stream quic.Stream, header interface{}, state uint8, st
 			return err
 		}
 
+		log.Printf("[server] Sending handshake acknowledgement message")
+
 		_, err = stream.Write(ackBytes)
 		if err != nil {
 			log.Printf("[server] Error sending handshake acknowledgement: %s", err)
@@ -504,8 +506,6 @@ func (s *Server) sendAck(stream quic.Stream, header interface{}, state uint8, st
 			return err
 		}
 
-		log.Printf("[server] Sending acknowledgement message")
-
 		ackBytes, err := pdu.AckMessageToBytes(ackMessage)
 		if err != nil {
 			log.Printf("[server] Error encoding AckMessage: %s", err)
@@ -517,6 +517,8 @@ func (s *Server) sendAck(stream quic.Stream, header interface{}, state uint8, st
 			padding := make([]byte, pdu.MAX_PDU_SIZE-uint32(len(ackBytes)))
 			ackBytes = append(ackBytes, padding...)
 		}
+
+		log.Printf("[server] Sending acknowledgement message for %s message", pdu.GetTypeAsString(h.Type))
 
 		_, err = stream.Write(ackBytes)
 		if err != nil {

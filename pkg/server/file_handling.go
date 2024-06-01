@@ -127,6 +127,7 @@ func (s *Server) handleDownload(stream quic.Stream, conMessage *pdu.ControlMessa
 
 	transaction_id := conMessage.Header.TransactionID
 	seq_number := conMessage.Header.SeqNumber
+	var dataMsg *pdu.DataMessage
 	i := uint32(1)
 	overhead := pdu.CalculateDataOverhead(token, filepath)
 	data_buffer := pdu.MakeDataBuffer(overhead)
@@ -150,7 +151,7 @@ func (s *Server) handleDownload(stream quic.Stream, conMessage *pdu.ControlMessa
 			Token:         token,
 		}
 
-		dataMsg := pdu.NewDataMessage(dataHeader, pdu.WRITE, filepath, data_buffer)
+		dataMsg = pdu.NewDataMessage(dataHeader, pdu.WRITE, filepath, data_buffer)
 		dataBytes, err := pdu.DataMessageToBytes(dataMsg)
 		if err != nil {
 			s.sendError(stream, conMessage.Header, pdu.READ_ERROR, "failed to create bytes from DataMessage")
@@ -173,9 +174,9 @@ func (s *Server) handleDownload(stream quic.Stream, conMessage *pdu.ControlMessa
 
 		i++
 	}
-	err = s.sendAck(stream, conMessage.Header, pdu.COMPLETE, pdu.ACK_SUCCESS)
+	err = s.sendAck(stream, dataMsg.Header, pdu.COMPLETE, pdu.ACK_SUCCESS)
 	if err != nil {
-		s.sendError(stream, conMessage.Header, pdu.CONNECTION_INTERRUPTED, "failed to send AckMessage")
+		s.sendError(stream, dataMsg.Header, pdu.CONNECTION_INTERRUPTED, "failed to send AckMessage")
 		errHand.LogError(err, "error sending Ack for successful download")
 		return err
 	}
