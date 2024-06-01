@@ -62,7 +62,13 @@ func (s *Server) getTLS() *tls.Config {
 // run the server and wait for a session to be initiated
 func (s *Server) Run() error {
 	address := fmt.Sprintf("%s:%d", s.cfg.Address, s.cfg.Port)
-	listener, err := quic.ListenAddr(address, s.tls, nil)
+
+	// Set up QUIC config with increased MaxIdleTimeout
+	quicConfig := &quic.Config{
+		MaxIdleTimeout: time.Minute * 5, // Increase idle timeout to 5 minutes
+	}
+
+	listener, err := quic.ListenAddr(address, s.tls, quicConfig)
 	if err != nil {
 		errHand.LogError(err, "error listening")
 		return err
