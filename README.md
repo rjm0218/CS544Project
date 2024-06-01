@@ -47,6 +47,7 @@ cd CS544Project
 1. Build the server and client applications:
 
 make build
+make build
 
 
 2. Run the server:
@@ -62,6 +63,7 @@ make build
 
 
 4. Follow the prompts in the client to authenticate and perform file transfer operations.
+
 
 
 ## Login

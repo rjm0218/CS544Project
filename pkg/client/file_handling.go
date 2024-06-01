@@ -170,7 +170,7 @@ func (c *Client) downloadFile(stream quic.Stream, fileName string, transaction_i
 	}
 
 	filePath := LOCAL + fileName
-	file, err := os.Create(LOCAL + filePath)
+	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
 	}
