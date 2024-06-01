@@ -58,7 +58,13 @@ func NewClient(cfg ClientConfig) *Client {
 // run the instance of a client
 func (c *Client) Run() error {
 	serverAddr := fmt.Sprintf("%s:%d", c.cfg.ServerAddr, c.cfg.PortNumber)
-	conn, err := quic.DialAddr(c.ctx, serverAddr, c.tls, nil)
+
+	// Set up QUIC config with increased MaxIdleTimeout
+	quicConfig := &quic.Config{
+		MaxIdleTimeout: time.Minute * 5, // Increase idle timeout to 5 minutes
+	}
+
+	conn, err := quic.DialAddr(c.ctx, serverAddr, c.tls, quicConfig)
 	if err != nil {
 		errHand.LogError(err, "error dialing server")
 		return err
