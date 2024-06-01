@@ -187,6 +187,9 @@ func (c *Client) protocolHandler(stream quic.Stream) error {
 			filename := strings.TrimSpace(filePath)
 			err := c.uploadFile(stream, filename, transaction_id, seq_number)
 			if err != nil {
+				if strings.Contains(err.Error(), "timeout") {
+					return err
+				}
 				errHand.LogError(err, "error uploading file")
 				continue
 			}
@@ -255,8 +258,7 @@ func (c *Client) handleAck(raw []byte) (uint8, error) {
 		return pdu.ACK_FAILURE, err
 	}
 
-	log.Printf("[client] ACK received for sequence number: %d", ackMessage.AcknowledgedSequenceNumber)
-	return pdu.ACK_SUCCESS, nil
+	return ackMessage.Status, nil
 }
 
 // handles sending any ack messages back to server

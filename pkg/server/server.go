@@ -219,7 +219,7 @@ func (s *Server) handleAuthenticatedUser(stream quic.Stream, user *User, token [
 				return handError
 			}
 			if state == pdu.RESET {
-				log.Printf("[server] connection terminated for user: %s", user)
+				log.Printf("[server] connection terminated for user: %s", user.Username)
 				return nil
 			}
 		case pdu.ERROR:

@@ -14,6 +14,10 @@ import (
 	"github.com/quic-go/quic-go"
 )
 
+const (
+	LOCAL = "./local/"
+)
+
 // handle the uploading of a file to the server
 func (c *Client) uploadFile(stream quic.Stream, filePath string, transaction_id uint32, seq_number uint32) error {
 
@@ -79,6 +83,7 @@ func (c *Client) uploadFile(stream quic.Stream, filePath string, transaction_id 
 	overhead := pdu.CalculateDataOverhead(c.token, fileName)
 
 	data_buffer := pdu.MakeDataBuffer(overhead)
+	var byte_total int = 0
 
 	for {
 		n, err := file.Read(data_buffer)
@@ -106,6 +111,8 @@ func (c *Client) uploadFile(stream quic.Stream, filePath string, transaction_id 
 			return fmt.Errorf("failed to create bytes from DataMessage: %w", err)
 		}
 
+		byte_total += len(dataBytes)
+
 		//Pad the dataBytes to pdu.MAX_PDU_SIZE if necessary
 		if len(dataBytes) < int(pdu.MAX_PDU_SIZE) {
 			padding := make([]byte, pdu.MAX_PDU_SIZE-uint32(len(dataBytes)))
@@ -118,12 +125,12 @@ func (c *Client) uploadFile(stream quic.Stream, filePath string, transaction_id 
 		}
 	}
 
-	log.Printf("[client] finished sending file. Waiting for server to send ack...")
+	log.Printf("[client] finished sending file of size %d. Waiting for server to send ack...", byte_total)
 	return nil
 }
 
 // handle the downloading of a file from the server
-func (c *Client) downloadFile(stream quic.Stream, filePath string, transaction_id uint32, seq_number uint32) error {
+func (c *Client) downloadFile(stream quic.Stream, fileName string, transaction_id uint32, seq_number uint32) error {
 
 	controlHeader := pdu.MessHeader{
 		Type:          pdu.CONTROL,
@@ -133,7 +140,7 @@ func (c *Client) downloadFile(stream quic.Stream, filePath string, transaction_i
 		Token:         c.token,
 	}
 
-	controlMsg := pdu.NewControlMessage(controlHeader, uint64(time.Now().UnixNano()), pdu.START_DOWNLOAD, []byte(filePath))
+	controlMsg := pdu.NewControlMessage(controlHeader, uint64(time.Now().UnixNano()), pdu.START_DOWNLOAD, []byte(fileName))
 	controlBytes, err := pdu.ControlMessageToBytes(controlMsg)
 	if err != nil {
 		return fmt.Errorf("failed to marshal control message: %w", err)
@@ -162,11 +169,14 @@ func (c *Client) downloadFile(stream quic.Stream, filePath string, transaction_i
 		log.Printf("[client] received Ack signaling download in progress")
 	}
 
-	file, err := os.Create(filePath)
+	filePath := LOCAL + fileName
+	file, err := os.Create(LOCAL + filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
 	}
+
 	defer file.Close()
+	var dataMess pdu.DataMessage
 	data_buffer := pdu.MakePduBuffer()
 	for {
 
@@ -202,6 +212,7 @@ func (c *Client) downloadFile(stream quic.Stream, filePath string, transaction_i
 			if err != nil {
 				return err
 			} else if status == pdu.ACK_SUCCESS {
+				log.Printf("[client] received Ack signaling download complete")
 				break
 			}
 		} else if headtype != pdu.DATA {
@@ -219,12 +230,12 @@ func (c *Client) downloadFile(stream quic.Stream, filePath string, transaction_i
 		}
 	}
 
-	err = c.sendAck(stream, controlHeader, pdu.COMPLETE, pdu.ACK_SUCCESS)
+	err = c.sendAck(stream, dataMess.Header, pdu.COMPLETE, pdu.ACK_SUCCESS)
 
 	if err != nil {
 		return fmt.Errorf("failed to send AckMessage: %w", err)
 	} else {
-		log.Printf("[client] sent Ack signaling download success")
+		log.Printf("[client] Download successful. %s downloaded to %s", fileName, LOCAL)
 		return nil
 	}
 

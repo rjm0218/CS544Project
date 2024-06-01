@@ -243,6 +243,10 @@ func (msg *DataMessage) CalculateChecksum() {
 	msg.Checksum = crc32.ChecksumIEEE(msg.Data)
 }
 
+func VerifyChecksum(msg *DataMessage) uint32 {
+	return crc32.ChecksumIEEE(msg.Data)
+}
+
 // Make a buffer based on header size to limit data to max pdu size
 func MakeDataBuffer(messSize uint32) []byte {
 	return make([]byte, MAX_PDU_SIZE-messSize)

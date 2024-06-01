@@ -22,6 +22,7 @@ type FileUpload struct {
 	Filename   []byte
 	Buffer     []byte
 	LastSeqNum uint32
+	TotalBytes uint32
 }
 
 // structure to track all the file uploads in progress
@@ -71,6 +72,10 @@ func (s *Server) handleUpload(stream quic.Stream, filepath []byte, Mess *pdu.Dat
 		}
 
 	} else if Mess.Header.Length < pdu.MAX_PDU_SIZE && Mess.Header.SeqNumber > 1 {
+		upload.Buffer = append(upload.Buffer, Mess.Data...)
+		upload.LastSeqNum = Mess.Header.SeqNumber
+		upload.TotalBytes += uint32(len(Mess.Data))
+
 		_, err = file.Write(upload.Buffer)
 		if err != nil {
 			errHand.LogError(err, "error writing file to server")
@@ -78,7 +83,7 @@ func (s *Server) handleUpload(stream quic.Stream, filepath []byte, Mess *pdu.Dat
 			return err
 		}
 		delete(uploads, Mess.Header.TransactionID)
-		log.Printf("[server] File %s uploaded successfully to %s", filename, REPO)
+		log.Printf("[server] File %s (%d bytes) uploaded successfully to %s", filename, upload.TotalBytes, REPO)
 		err := s.sendAck(stream, Mess.Header, pdu.COMPLETE, pdu.ACK_SUCCESS)
 		if err != nil {
 			errHand.LogError(err, "error sending Ack for completion")
@@ -93,6 +98,7 @@ func (s *Server) handleUpload(stream quic.Stream, filepath []byte, Mess *pdu.Dat
 		}
 		upload.Buffer = append(upload.Buffer, Mess.Data...)
 		upload.LastSeqNum = Mess.Header.SeqNumber
+		upload.TotalBytes += uint32(len(Mess.Data))
 		return nil
 	}
 
