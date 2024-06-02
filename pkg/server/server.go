@@ -98,26 +98,29 @@ func (s *Server) streamHandler(sess quic.Connection) {
 		}
 
 		//Handle protocol activity on stream
-		s.protocolHandler(stream)
+		control, err := s.protocolHandler(stream)
+		if control == pdu.RESET || err != nil {
+			return
+		}
 	}
 }
 
 // handle the protocol activity on a stream including setting up handshake and data
-func (s *Server) protocolHandler(stream quic.Stream) error {
+func (s *Server) protocolHandler(stream quic.Stream) (uint8, error) {
 	buff := pdu.MakePduBuffer()
 
 	// Read the command from the stream
 	n, err := stream.Read(buff)
 	if err != nil {
 		errHand.LogError(err, "error reading raw data from stream")
-		return err
+		return pdu.RESET, err
 	}
 
 	// Handle handshake messages
 	HandMess, err := pdu.HandMessageFromBytes(buff[:n])
 	if err != nil {
 		errHand.LogError(err, "error getting handshake message from raw data")
-		return err
+		return pdu.RESET, err
 	}
 
 	log.Printf("[server] Handshake message received: %d", HandMess.Header.Type)
@@ -125,13 +128,13 @@ func (s *Server) protocolHandler(stream quic.Stream) error {
 	if HandMess.Header.Type == pdu.HANDSHAKE_INIT {
 		user, sessionToken, err := s.handleHandshake(stream, *HandMess)
 		if err != nil {
-			return err
+			return pdu.RESET, err
 		} else {
 			return s.handleAuthenticatedUser(stream, user, sessionToken)
 		}
 	} else {
 		s.sendError(stream, HandMess.Header, pdu.ACCESS_DENIED, "No handshake message sent, cannot establish connection")
-		return errors.New("no handshake message sent, cannot establish connection")
+		return pdu.RESET, errors.New("no handshake message sent, cannot establish connection")
 	}
 }
 
@@ -181,7 +184,7 @@ func (s *Server) handleHandshake(stream quic.Stream, handshakeMessage pdu.HandMe
 }
 
 // handle the authenticated user and wait for the client to send a control or data message
-func (s *Server) handleAuthenticatedUser(stream quic.Stream, user *User, token []byte) error {
+func (s *Server) handleAuthenticatedUser(stream quic.Stream, user *User, token []byte) (uint8, error) {
 	for {
 		// Read the command from the stream
 		buff := pdu.MakePduBuffer()
@@ -189,10 +192,10 @@ func (s *Server) handleAuthenticatedUser(stream quic.Stream, user *User, token [
 		if err != nil && err != io.EOF {
 			if strings.Contains(err.Error(), "timeout") {
 				log.Printf("[server] stream closed due to network inactivity: %s", err.Error())
-				return nil
+				return pdu.RESET, nil
 			}
 			errHand.LogError(err, "error reading raw data from stream")
-			return err
+			return pdu.RESET, err
 		} else if err == io.EOF || n == 0 {
 			log.Printf("[server] waiting for next command from client")
 			continue
@@ -202,13 +205,13 @@ func (s *Server) handleAuthenticatedUser(stream quic.Stream, user *User, token [
 		msg, err := pdu.GetMessage(buff[:n])
 		if err != nil {
 			errHand.LogError(err, "error parsing message")
-			return err
+			return pdu.RESET, err
 		}
 
 		headtype, err := pdu.ExtractMessageType(msg)
 		if err != nil {
 			errHand.LogError(err, "error extracting message type")
-			return err
+			return pdu.RESET, err
 		}
 
 		switch headtype {
@@ -216,33 +219,33 @@ func (s *Server) handleAuthenticatedUser(stream quic.Stream, user *User, token [
 			handError := s.handleData(stream, msg, user)
 			if handError != nil {
 				errHand.LogError(handError, "error handling Data message")
-				return handError
+				return pdu.RESET, handError
 			}
 		case pdu.CONTROL:
 			state, handError := s.handleControl(stream, msg, token, user)
 			if handError != nil {
 				errHand.LogError(handError, "error handling Control message")
-				return handError
+				return pdu.RESET, handError
 			}
 			if state == pdu.RESET {
 				log.Printf("[server] connection terminated for user: %s", user.Username)
-				return nil
+				return pdu.RESET, nil
 			}
 		case pdu.ERROR:
 			handError := s.handleError(stream, msg)
 			if handError != nil {
 				errHand.LogError(handError, "error handling Error message")
-				return handError
+				return pdu.RESET, handError
 			}
 		case pdu.ACK:
 			_, handError := s.handleAck(msg)
 			if handError != nil {
 				errHand.LogError(handError, "error handling Ack message")
-				return handError
+				return pdu.RESET, handError
 			}
 		default:
 			log.Printf("[server] Unknown PDU type: %d", headtype)
-			return fmt.Errorf("unknown PDU type: %d", headtype)
+			return pdu.RESET, fmt.Errorf("unknown PDU type: %d", headtype)
 		}
 
 	}

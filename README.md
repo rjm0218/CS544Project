@@ -47,16 +47,15 @@ cd CS544Project
 1. Build the server and client applications:
 
 make build
-make build
 
 
-2. Run the server:
+2. Run the server (in one terminal):
 
 
 ./bin/echo -server -server-ip `your desired ip`
 
 
-3. Run the client and connect to the server:
+3. Run the client and connect to the server (in another terminal):
 
 
 ./bin/echo -client -server-addr `same ip as server`
